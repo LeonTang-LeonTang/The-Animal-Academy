@@ -1,0 +1,5 @@
+{
+  "name": "The Animal Academy",
+  "description": "An educational application where a faculty of animal experts provide clear explanations and then illustrate concepts with custom comics of varying length based on the topic's complexity.",
+  "requestFramePermissions": []
+}
