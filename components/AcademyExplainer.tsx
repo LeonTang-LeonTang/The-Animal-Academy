@@ -1,15 +1,48 @@
 import React, { useState, useCallback } from 'react';
-import { generateAcademyLesson, ComicPanelData } from '../services/geminiService';
-import StoryDisplay from './StoryDisplay';
+import { generateAcademyLesson, ConceptExplanation } from '../services/geminiService';
+import LessonDisplay from './StoryDisplay';
 import Loader from './Loader';
 import ErrorDisplay from './ErrorDisplay';
 
 const AcademyExplainer: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
-  const [explanation, setExplanation] = useState<string>('');
-  const [comicPanels, setComicPanels] = useState<ComicPanelData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // State for the lesson and uploaded file
+  const [lesson, setLesson] = useState<ConceptExplanation | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [documentText, setDocumentText] = useState<string>('');
+
+  const resetLesson = () => {
+    setLesson(null);
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'text/plain') {
+        setUploadedFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setDocumentText(e.target?.result as string);
+        };
+        reader.readAsText(file);
+        setError(null);
+      } else {
+        setError("Please upload a plain text (.txt) file.");
+        setUploadedFile(null);
+        setDocumentText('');
+      }
+    }
+  };
+  
+  const clearFile = () => {
+    setUploadedFile(null);
+    setDocumentText('');
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
 
   const handleGeneration = useCallback(async () => {
     if (!topic.trim()) {
@@ -18,26 +51,27 @@ const AcademyExplainer: React.FC = () => {
     }
     setIsLoading(true);
     setError(null);
-    setComicPanels([]);
-    setExplanation('');
+    resetLesson();
 
     try {
-      const result = await generateAcademyLesson(topic);
-      setExplanation(result.explanation);
-      setComicPanels(result.comicPanels);
+      const document = uploadedFile ? { name: uploadedFile.name, text: documentText } : undefined;
+      const result = await generateAcademyLesson(topic, document);
+      setLesson(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [topic]);
+  }, [topic, uploadedFile, documentText]);
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       handleGeneration();
     }
   };
+  
+  const hasContent = lesson !== null;
 
   return (
     <div className="bg-white/70 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-lg border border-amber-200">
@@ -60,13 +94,27 @@ const AcademyExplainer: React.FC = () => {
         </button>
       </div>
 
+       <div className="mt-4 text-center">
+          <input id="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt" disabled={isLoading} />
+          {uploadedFile ? (
+              <div className="inline-flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                  <span className="text-sm text-slate-700">Using: {uploadedFile.name}</span>
+                  <button onClick={clearFile} disabled={isLoading} className="text-amber-600 hover:text-amber-800 font-bold text-lg leading-none align-middle" aria-label="Remove file">&times;</button>
+              </div>
+          ) : (
+              <label htmlFor="file-upload" className="text-sm text-slate-600 cursor-pointer inline-flex items-center bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-full border border-amber-200 transition-colors">
+                  Optional: Upload a document (.txt) for a focused explanation
+              </label>
+          )}
+      </div>
+
       <div className="mt-8 min-h-[200px] flex items-center justify-center">
         {isLoading && <Loader />}
         {error && !isLoading && <ErrorDisplay message={error} />}
-        {(explanation || comicPanels.length > 0) && !isLoading && (
-          <StoryDisplay explanation={explanation} panels={comicPanels} />
+        {hasContent && !isLoading && (
+          <LessonDisplay {...lesson!} />
         )}
-        {!isLoading && !error && !explanation && comicPanels.length === 0 && (
+        {!isLoading && !error && !hasContent && (
           <div className="text-center text-slate-500">
             <p className="text-xl">Welcome to the Animal Academy! 🐾</p>
             <p className="mt-2">What would you like to learn about today? Our expert animal faculty is ready to help.</p>

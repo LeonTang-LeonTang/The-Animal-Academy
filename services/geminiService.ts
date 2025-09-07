@@ -1,27 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const COMIC_SYSTEM_INSTRUCTION = `You are the wise Headmaster of the Animal Academy, an institution where animal experts explain complex concepts to learners of all ages. Your goal is to be clear, educational, and engaging.
-For any given topic, you must produce a single JSON object with two main properties: "explanation" and "comic_script".
-
-1.  **explanation**:
-    *   This should be a well-structured, encyclopedic overview of the topic, written in clear and accessible language using plain text with newline characters for paragraphs and lists.
-    *   It MUST include the following details where applicable:
-        *   A brief, one-sentence summary.
-        *   The origin and history of the concept.
-        *   The core meaning and definition.
-        *   The key person or group who created or popularized it.
-        *   Important related concepts or context.
-
-2.  **comic_script**:
-    *   This must be a script for a comic strip that visually demonstrates or explores a deeper aspect of the topic. It should feature animals teaching or illustrating the concept in a metaphorical or literal way (e.g., a beaver explaining engineering, a chameleon demonstrating adaptation).
-    *   The script must be an array of JSON objects, with each object representing one panel.
-    *   You must decide the number of panels based on the topic's complexity, using between 4 and 8 panels. A simple topic might need 4, while a complex one might need 8.
-    *   Each object must have two properties:
-        a. "narrative": A very short, insightful caption for the panel (under 15 words).
-        b. "image_prompt": A detailed description for an image generator. The prompt MUST start with 'clean, minimalist, educational vector illustration of...'. It should describe a clear scene featuring animals that visually explains the panel's point.
-
-The final output MUST be a single JSON object that strictly follows the provided schema. The tone should be educational, clear, and charming.`;
-
 interface ComicPanelScript {
   narrative: string;
   image_prompt: string;
@@ -32,52 +10,134 @@ export interface ComicPanelData {
     imageUrl: string;
 }
 
-export interface ConceptExplanation {
-    explanation: string;
-    comicPanels: ComicPanelData[];
+export interface MindMapNode {
+    title: string;
+    children?: MindMapNode[];
 }
 
-export const generateAcademyLesson = async (topic: string): Promise<ConceptExplanation> => {
+export interface FlashcardData {
+    term: string;
+    definition: string;
+}
+
+export interface QuoteData {
+    text: string;
+    author: string;
+}
+
+export interface ConceptExplanation {
+    quote: QuoteData;
+    explanation: string;
+    recommendedReading: string[];
+    comicPanels: ComicPanelData[];
+    flashcards: FlashcardData[];
+    mindMap: MindMapNode;
+    sourceFileName?: string;
+}
+
+const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+        quote: {
+            type: Type.OBJECT,
+            properties: {
+                text: { type: Type.STRING },
+                author: { type: Type.STRING },
+            },
+            required: ['text', 'author'],
+        },
+        explanation: { type: Type.STRING },
+        recommended_reading: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+        },
+        comic_script: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    narrative: { type: Type.STRING },
+                    image_prompt: { type: Type.STRING },
+                },
+                required: ['narrative', 'image_prompt'],
+            },
+        },
+        flashcards: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    term: { type: Type.STRING },
+                    definition: { type: Type.STRING },
+                },
+                required: ['term', 'definition'],
+            },
+        },
+        mind_map: {
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING },
+                children: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING },
+                            children: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        title: { type: Type.STRING }
+                                    },
+                                    required: ['title']
+                                }
+                            }
+                        },
+                        required: ['title']
+                    }
+                }
+            },
+            required: ['title']
+        }
+    },
+    required: ['quote', 'explanation', 'recommended_reading', 'comic_script', 'flashcards', 'mind_map'],
+};
+
+
+export const generateAcademyLesson = async (topic: string, document?: { name: string, text: string }): Promise<ConceptExplanation> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing. Please set the API_KEY environment variable.");
     }
     
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        
+        const ragInstruction = document?.text
+            ? `Use the following document as the primary source to create the lesson. Base the explanation heavily on its content. When you use information from the document, explicitly mention it (e.g., "According to the provided document..."). \n\nDOCUMENT CONTENT:\n"""\n${document.text}\n"""\n\n`
+            : '';
 
-        // Step 1: Generate the explanation and comic script in one call
+        const prompt = `${ragInstruction}As the wise Headmaster of the Animal Academy, create a comprehensive lesson about the topic: "${topic}".
+The lesson must be a single JSON object adhering to the provided schema.
+- The "explanation" should be well-structured into multiple paragraphs for better readability (use '\\n\\n' for paragraph breaks). It should identify key terms and format them as Markdown hyperlinks to Wikipedia (e.g., [Term](https://en.wikipedia.org/wiki/Term)).
+- The "comic_script" must be a fun, educational story with 5-10 panels.
+- Each "image_prompt" in the comic script must begin with the exact phrase 'clean, minimalist, educational vector illustration of...'.`;
+
+        // Step 1: Generate all text content and image prompts in one call
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `Please create an explanation and comic script about: ${topic}.`,
+            contents: prompt,
             config: {
-                systemInstruction: COMIC_SYSTEM_INSTRUCTION,
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        explanation: { type: Type.STRING },
-                        comic_script: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    narrative: { type: Type.STRING },
-                                    image_prompt: { type: Type.STRING },
-                                },
-                                required: ['narrative', 'image_prompt'],
-                            },
-                        },
-                    },
-                    required: ['explanation', 'comic_script'],
-                },
+                responseSchema,
             },
         });
 
         const jsonStr = response.text.trim();
         const parsedResponse = JSON.parse(jsonStr);
-        const { explanation, comic_script } = parsedResponse;
+        const { explanation, comic_script, quote, recommended_reading, flashcards, mind_map } = parsedResponse;
 
-        if (!explanation || !comic_script) {
+        if (!explanation || !comic_script || !quote || !recommended_reading || !flashcards || !mind_map) {
             throw new Error("Invalid response structure from the text model.");
         }
 
@@ -107,11 +167,23 @@ export const generateAcademyLesson = async (topic: string): Promise<ConceptExpla
             })
         );
 
-        return { explanation, comicPanels };
+        return { 
+            quote,
+            explanation,
+            recommendedReading: recommended_reading,
+            comicPanels,
+            flashcards,
+            mindMap: mind_map,
+            sourceFileName: document?.name,
+        };
 
     } catch (error) {
         console.error("Error generating concept comic:", error);
         if (error instanceof Error) {
+            // Check for JSON parsing errors specifically, as the model might still fail.
+            if (error.message.includes("JSON")) {
+                 throw new Error(`Failed to generate the lesson: The AI returned an invalid data structure. Please try again.`);
+            }
             throw new Error(`Failed to generate the lesson: ${error.message}`);
         }
         throw new Error("An unknown error occurred during lesson generation.");
