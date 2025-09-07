@@ -112,18 +112,6 @@ Every lesson begins with a **short, powerful quote** related to the concept.
 
 ---
 
-## 📖 Recommended Readings (General)  
-- *Understanding Media* – Marshall McLuhan  
-- *The Selfish Gene* – Richard Dawkins  
-- *Gödel, Escher, Bach* – Douglas Hofstadter  
-
----
-
-## 🛠️ Installation & Usage  
-
-*(Add your setup instructions here – framework, dependencies, run commands, etc.)*  
-
----
 
 ## 🌍 Vision  
 
