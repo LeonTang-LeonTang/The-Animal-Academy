@@ -4,8 +4,6 @@
 
 # Run and deploy your AI Studio app
 
-**The Animal Academy** is a developing version of 动物学院 from Tencent Cloud Agent Development Platform. Due to the limited support of the product and the plugins family of Tencent Cloud Agent, and for both better demonstration and functionality, **I have decided to use the repository for further development to provide more accessible features** by my original product design and insights.
-
 This contains everything you need to run your app locally.
 
 View the app in AI Studio: https://ai.studio/apps/drive/1a5cjMARCEWNzH-v1U50QTcgHH9-BA8Vj
