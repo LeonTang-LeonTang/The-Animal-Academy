@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { Language } from "../hooks/useLocalization";
 
 interface ComicPanelScript {
   narrative: string;
@@ -26,6 +27,7 @@ export interface QuoteData {
 }
 
 export interface ConceptExplanation {
+    id: string; // Made non-optional for reliable keying
     quote: QuoteData;
     explanation: string;
     recommendedReading: string[];
@@ -33,6 +35,8 @@ export interface ConceptExplanation {
     flashcards: FlashcardData[];
     mindMap: MindMapNode;
     sourceFileName?: string;
+    likes: number;
+    dislikes: number;
 }
 
 const responseSchema = {
@@ -105,7 +109,11 @@ const responseSchema = {
 };
 
 
-export const generateAcademyLesson = async (topic: string, document?: { name: string, text: string }): Promise<ConceptExplanation> => {
+export const generateAcademyLesson = async (
+    topic: string,
+    language: Language,
+    document?: { name: string, text: string }
+): Promise<ConceptExplanation> => {
     if (!process.env.API_KEY) {
         throw new Error("API key is missing. Please set the API_KEY environment variable.");
     }
@@ -113,15 +121,34 @@ export const generateAcademyLesson = async (topic: string, document?: { name: st
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
+        const languageName = language === 'zh' ? 'Chinese' : 'English';
+
         const ragInstruction = document?.text
-            ? `Use the following document as the primary source to create the lesson. Base the explanation heavily on its content. When you use information from the document, explicitly mention it (e.g., "According to the provided document..."). \n\nDOCUMENT CONTENT:\n"""\n${document.text}\n"""\n\n`
+            ? `A document has been provided. Use it as a primary reference to enrich the explanation. Weave in key insights and data from the document, but also supplement with your broader knowledge to provide a comprehensive lesson. The goal is a balanced synthesis, not just a summary of the document.
+When you use a direct quote from the document, you MUST format it as a Markdown blockquote on its own line, like this:
+> This is the exact quote from the document.
+Do not embed quotes inside your own paragraphs.
+
+\n\nDOCUMENT CONTENT:\n"""\n${document.text}\n"""\n\n`
             : '';
 
-        const prompt = `${ragInstruction}As the wise Headmaster of the Animal Academy, create a comprehensive lesson about the topic: "${topic}".
+        const prompt = `${ragInstruction}You are the wise Headmaster of the Animal Academy. Create a comprehensive lesson about the topic: "${topic}".
+The target language for the output is ${languageName}.
 The lesson must be a single JSON object adhering to the provided schema.
-- The "explanation" should be well-structured into multiple paragraphs for better readability (use '\\n\\n' for paragraph breaks). It should identify key terms and format them as Markdown hyperlinks to Wikipedia (e.g., [Term](https://en.wikipedia.org/wiki/Term)).
-- The "comic_script" must be a fun, educational story with 5-10 panels.
-- Each "image_prompt" in the comic script must begin with the exact phrase 'clean, minimalist, educational vector illustration of...'.`;
+
+### Field-Specific Instructions ###
+- **quote**: Find an insightful and inspiring quote about the topic from world literature, proverbs, or famous figures.
+    - IMPORTANT: DO NOT use the provided document content for this quote.
+    - CULTURAL AWARENESS: The target audience speaks ${languageName}. Prioritize quotes that originate from or are well-known within ${languageName}-speaking cultures. However, the most important criterion is high relevance to the topic, so a highly relevant quote from another culture is acceptable and encouraged if it's a better fit.
+- **explanation**: A well-structured explanation in multiple paragraphs (use '\\n\\n' for breaks). The tone should be accessible and engaging, as if a friendly animal professor is teaching. Start with a clear overview: define the term, mention its origin or creator, and its fundamental meaning. Then, transition into a storytelling format to illustrate the concept's deeper implications or provide examples. For key terms, embed markdown links to authoritative web pages (e.g., Wikipedia). The URL MUST be a full, valid URL starting with "https://", like this: \`[key term](https://en.wikipedia.org/wiki/Key_Term)\`. If a source document is provided, you MUST follow the citation rules mentioned above.
+- **recommended_reading**: A list of 3-5 books or articles in a standard citation format (e.g., "Author, A. A. (Year). Title of work. Publisher.").
+- **comic_script**: This is the MOST important part.
+    - The comic's story must directly illustrate a key part of the concept from the 'explanation' section. Create a simple narrative arc across 5-10 panels: introduce a problem or question related to the topic, show the animal characters exploring it through dialogue and action, and conclude with a panel that summarizes the lesson learned. Each panel's narrative should build on the last to tell a cohesive, educational story.
+    - The "narrative" for each panel MUST NOT contain any markdown.
+    - The characters in the comic MUST ALWAYS be anthropomorphic animals (e.g., a wise owl professor, curious rabbit students). They MUST be dressed in charming academic attire (like tweed jackets, lab coats, or graduation caps). This is non-negotiable.
+    - Each "image_prompt" MUST begin with the exact phrase 'clean, minimalist, educational vector illustration of...'.
+- **flashcards**: Create flashcards for key terms. For each 'definition', keep it concise and easy to understand. Use markdown bold (\`**term**\`) for the most critical keywords to make them stand out.`;
+
 
         // Step 1: Generate all text content and image prompts in one call
         const response = await ai.models.generateContent({
@@ -168,6 +195,7 @@ The lesson must be a single JSON object adhering to the provided schema.
         );
 
         return { 
+            id: self.crypto.randomUUID(),
             quote,
             explanation,
             recommendedReading: recommended_reading,
@@ -175,6 +203,8 @@ The lesson must be a single JSON object adhering to the provided schema.
             flashcards,
             mindMap: mind_map,
             sourceFileName: document?.name,
+            likes: 0,
+            dislikes: 0,
         };
 
     } catch (error) {

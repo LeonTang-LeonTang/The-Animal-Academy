@@ -27,7 +27,7 @@ const MindMapNodeComponent: React.FC<NodeProps> = ({ node, isEditable, isRoot = 
            <div className="flex-shrink-0 h-10 flex items-center">
              {hasChildren ? (
                 <ChevronRightIcon 
-                  className={`h-5 w-5 text-amber-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'} cursor-pointer`}
+                  className={`h-5 w-5 text-amber-500 transition-transform duration-200 mind-map-chevron ${isExpanded ? 'rotate-90' : 'rotate-0'} cursor-pointer`}
                   onClick={toggleExpand}
                 />
              ) : (
@@ -84,7 +84,6 @@ const MindMapDisplay: React.FC<{ node: MindMapNode; isEditable: boolean }> = ({ 
           left: -10px; /* Align with chevron center */
           height: 100%;
           width: 2px;
-          background-color: #fbbf24;
         }
         /* Shorten vertical line for the last child */
         .mind-map-list > li:last-child::before {
@@ -98,7 +97,6 @@ const MindMapDisplay: React.FC<{ node: MindMapNode; isEditable: boolean }> = ({ 
           left: -10px;
           width: 10px;
           height: 2px;
-          background-color: #fbbf24;
         }
         /* Root element should not have lines */
         .mind-map-list:first-child > li::before,

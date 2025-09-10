@@ -9,6 +9,11 @@ interface FlashcardProps {
 const Flashcard: React.FC<FlashcardProps> = ({ term, definition, isEditable }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
+  const formattedDefinition = definition.replace(
+    /\*\*(.*?)\*\*/g,
+    '<strong class="font-bold text-amber-800">$1</strong>'
+  );
+
   return (
     <div
       className="group w-full h-64 [perspective:1000px] cursor-pointer"
@@ -32,15 +37,14 @@ const Flashcard: React.FC<FlashcardProps> = ({ term, definition, isEditable }) =
         </div>
         
         {/* Back of Card */}
-        <div className="absolute w-full h-full bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center p-4 [transform:rotateY(180deg)] [backface-visibility:hidden]">
-          <p
-            className="text-slate-700 text-center font-sans"
+        <div className="absolute w-full h-full bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center p-6 [transform:rotateY(180deg)] [backface-visibility:hidden]">
+          <div
+            className="text-slate-700 text-left font-sans w-full"
             contentEditable={isEditable}
             suppressContentEditableWarning={true}
             onClick={(e) => isEditable && e.stopPropagation()}
-          >
-            {definition}
-          </p>
+            dangerouslySetInnerHTML={{ __html: formattedDefinition }}
+          />
         </div>
       </div>
     </div>

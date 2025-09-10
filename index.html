@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -21,6 +22,107 @@
         },
       }
     </script>
+    <style>
+      /* --- Theme Overrides --- */
+      /* Base theme uses Amber colors from Tailwind by default in the JSX. These rules override them. */
+
+      /* Default Mind Map Line Color */
+      .mind-map-list > li::before,
+      .mind-map-list > li > div:first-child::before {
+        background-color: #fbbf24; /* amber-300 */
+      }
+
+      /* Cool Theme (Sky/Blue) */
+      .theme-cool .bg-amber-50 { background-color: #f0f9ff; }
+      .theme-cool .bg-amber-100 { background-color: #e0f2fe; }
+      .theme-cool .bg-amber-200 { background-color: #bae6fd; }
+      .theme-cool .bg-amber-300 { background-color: #7dd3fc; }
+      .theme-cool .border-amber-100 { border-color: #e0f2fe; }
+      .theme-cool .border-amber-200 { border-color: #bae6fd; }
+      .theme-cool .border-amber-300 { border-color: #7dd3fc; }
+      .theme-cool .border-amber-400 { border-color: #38bdf8; }
+      .theme-cool .focus\:border-amber-500:focus { border-color: #0ea5e9; }
+      .theme-cool .focus\:ring-amber-300:focus { --tw-ring-color: #7dd3fc; }
+      .theme-cool .text-amber-500 { color: #0ea5e9; }
+      .theme-cool .text-amber-600 { color: #0284c7; }
+      .theme-cool .bg-amber-600 { background-color: #0284c7; }
+      .theme-cool .hover\:bg-amber-700:hover { background-color: #0369a1; }
+      .theme-cool .text-amber-700 { color: #0369a1; }
+      .theme-cool .bg-amber-700 { background-color: #0369a1; }
+      .theme-cool .text-amber-800 { color: #075985; }
+      .theme-cool .text-amber-900 { color: #0c4a6e; }
+      .theme-cool .hover\:bg-amber-100:hover { background-color: #e0f2fe; }
+      .theme-cool .hover\:bg-amber-200:hover { background-color: #bae6fd; }
+      .theme-cool .hover\:bg-amber-300:hover { background-color: #7dd3fc; }
+      .theme-cool .hover\:text-amber-800:hover { color: #075985; }
+      .theme-cool .hover\:text-amber-900:hover { color: #0c4a6e; }
+      .theme-cool [contenteditable="true"] { outline-color: #38bdf8; }
+      .theme-cool .mind-map-list > li::before,
+      .theme-cool .mind-map-list > li > div:first-child::before {
+        background-color: #7dd3fc;
+      }
+
+
+      /* Forest Theme (Green/Teal) */
+      .theme-forest .bg-amber-50 { background-color: #ecfdf5; }
+      .theme-forest .bg-amber-100 { background-color: #d1fae5; }
+      .theme-forest .bg-amber-200 { background-color: #a7f3d0; }
+      .theme-forest .bg-amber-300 { background-color: #6ee7b7; }
+      .theme-forest .border-amber-100 { border-color: #d1fae5; }
+      .theme-forest .border-amber-200 { border-color: #a7f3d0; }
+      .theme-forest .border-amber-300 { border-color: #6ee7b7; }
+      .theme-forest .border-amber-400 { border-color: #34d399; }
+      .theme-forest .focus\:border-amber-500:focus { border-color: #10b981; }
+      .theme-forest .focus\:ring-amber-300:focus { --tw-ring-color: #6ee7b7; }
+      .theme-forest .text-amber-500 { color: #10b981; }
+      .theme-forest .text-amber-600 { color: #059669; }
+      .theme-forest .bg-amber-600 { background-color: #059669; }
+      .theme-forest .hover\:bg-amber-700:hover { background-color: #047857; }
+      .theme-forest .text-amber-700 { color: #047857; }
+      .theme-forest .bg-amber-700 { background-color: #047857; }
+      .theme-forest .text-amber-800 { color: #065f46; }
+      .theme-forest .text-amber-900 { color: #064e3b; }
+      .theme-forest .hover\:bg-amber-100:hover { background-color: #d1fae5; }
+      .theme-forest .hover\:bg-amber-200:hover { background-color: #a7f3d0; }
+      .theme-forest .hover\:bg-amber-300:hover { background-color: #6ee7b7; }
+      .theme-forest .hover\:text-amber-800:hover { color: #065f46; }
+      .theme-forest .hover\:text-amber-900:hover { color: #064e3b; }
+      .theme-forest [contenteditable="true"] { outline-color: #34d399; }
+      .theme-forest .mind-map-list > li::before,
+      .theme-forest .mind-map-list > li > div:first-child::before {
+        background-color: #6ee7b7;
+      }
+
+      /* Rose Theme (Pink) */
+      .theme-rose .bg-amber-50 { background-color: #fff1f2; }
+      .theme-rose .bg-amber-100 { background-color: #ffe4e6; }
+      .theme-rose .bg-amber-200 { background-color: #fecdd3; }
+      .theme-rose .bg-amber-300 { background-color: #fda4af; }
+      .theme-rose .border-amber-100 { border-color: #ffe4e6; }
+      .theme-rose .border-amber-200 { border-color: #fecdd3; }
+      .theme-rose .border-amber-300 { border-color: #fda4af; }
+      .theme-rose .border-amber-400 { border-color: #fb7185; }
+      .theme-rose .focus\:border-amber-500:focus { border-color: #f43f5e; }
+      .theme-rose .focus\:ring-amber-300:focus { --tw-ring-color: #fda4af; }
+      .theme-rose .text-amber-500 { color: #f43f5e; }
+      .theme-rose .text-amber-600 { color: #e11d48; }
+      .theme-rose .bg-amber-600 { background-color: #e11d48; }
+      .theme-rose .hover\:bg-amber-700:hover { background-color: #be123c; }
+      .theme-rose .text-amber-700 { color: #be123c; }
+      .theme-rose .bg-amber-700 { background-color: #be123c; }
+      .theme-rose .text-amber-800 { color: #9f1239; }
+      .theme-rose .text-amber-900 { color: #881337; }
+      .theme-rose .hover\:bg-amber-100:hover { background-color: #ffe4e6; }
+      .theme-rose .hover\:bg-amber-200:hover { background-color: #fecdd3; }
+      .theme-rose .hover\:bg-amber-300:hover { background-color: #fda4af; }
+      .theme-rose .hover\:text-amber-800:hover { color: #9f1239; }
+      .theme-rose .hover\:text-amber-900:hover { color: #881337; }
+      .theme-rose [contenteditable="true"] { outline-color: #fb7185; }
+      .theme-rose .mind-map-list > li::before,
+      .theme-rose .mind-map-list > li > div:first-child::before {
+        background-color: #fda4af;
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {
@@ -32,7 +134,7 @@
 }
 </script>
 </head>
-  <body class="bg-amber-50">
+  <body>
     <div id="root"></div>
   </body>
 </html>

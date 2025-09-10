@@ -1,0 +1,116 @@
+export const translations = {
+  en: {
+    title: "The Animal Academy",
+    tagline: "Let our animal teachers explain any concept with a custom comic!",
+    footer: "Education, illustrated by nature's finest.",
+    
+    headerAcademy: "Academy",
+    headerPlayground: "Playground",
+
+    explainerPlaceholder: "Ask our teachers... (e.g., 'Photosynthesis')",
+    explainButton: "Explain",
+    explainButtonLoading: "Thinking...",
+    usingFileLabel: "Using:",
+    uploadLabel: "Optional: Upload a doc (.txt, .docx, .pptx) for a focused explanation",
+
+    welcomeTitle: "Welcome to the Animal Academy!",
+    welcomeMessage: "What would you like to learn about today? Our expert animal faculty is ready to help.",
+    
+    errorTitle: "An Error Occurred",
+    errorEnterConcept: "Please enter a concept for our animals to explain.",
+    errorUnexpected: "An unexpected error occurred.",
+
+    loaderMessage1: "The animals are gathering their notes...",
+    loaderMessage2: "Professor Owl is drafting the explanation...",
+    loaderMessage3: "The capybaras are sketching the comics...",
+    loaderMessage4: "The diligent bees are organizing the flashcards...",
+    loaderMessage5: "Almost there, just putting it all together!",
+    
+    playgroundEmptyTitle: "The Playground is Empty",
+    playgroundEmptyMessage: "Go to the Academy, generate a lesson, and share it to see it here!",
+
+    explanationTitle: "Explanation",
+    readingTitle: "Recommended Reading",
+    sourceTitle: "Source",
+    sourceText: "This lesson was created using the uploaded document:",
+    comicTitle: "Comic Illustration",
+    flashcardsTitle: "Flashcards",
+    mindMapTitle: "Mind Map",
+
+    actionsTitle: "Customize & Share",
+    actionsText: "You can edit the text above, and save your custom lesson as a Word document.",
+    enableEditingButton: "Enable Editing",
+    lockEditsButton: "Lock Edits",
+    exportWordButton: "Export as Word",
+    sharePlaygroundButton: "Share to Playground",
+
+    rateLessonTitle: "Rate this Lesson",
+    discussionTitle: "Discussion",
+    commentPlaceholder: "Share your thoughts or ask a question...",
+    postCommentButton: "Post Comment",
+    noComments: "No comments yet. Be the first to share!",
+    replyButton: "Reply",
+    replyingTo: "Replying to",
+    cancelButton: "Cancel",
+    postReplyButton: "Post Reply",
+    commentPanda: "Anonymous Panda",
+    commentOwl: "Wise Owl",
+  },
+  zh: {
+    title: "动物学院",
+    tagline: "让我们的动物老师用定制漫画解释任何概念！",
+    footer: "由自然界的精英们阐释的教育。",
+    
+    headerAcademy: "学院",
+    headerPlayground: "操场",
+
+    explainerPlaceholder: "询问我们的老师... (例如, '光合作用')",
+    explainButton: "解释",
+    explainButtonLoading: "思考中...",
+    usingFileLabel: "使用文件:",
+    uploadLabel: "可选：上传文档（.txt, .docx, .pptx）以获得更集中的解释",
+
+    welcomeTitle: "欢迎来到动物学院！",
+    welcomeMessage: "今天你想学习什么？我们专业的动物教师团队随时准备提供帮助。",
+    
+    errorTitle: "发生错误",
+    errorEnterConcept: "请输入一个概念让我们的动物解释。",
+    errorUnexpected: "发生了意外错误。",
+    
+    loaderMessage1: "动物们正在收集笔记...",
+    loaderMessage2: "猫头鹰教授正在起草解释...",
+    loaderMessage3: "水豚们正在绘制漫画...",
+    loaderMessage4: "勤劳的蜜蜂正在整理抽认卡...",
+    loaderMessage5: "快好了，正在整理中！",
+    
+    playgroundEmptyTitle: "操场是空的",
+    playgroundEmptyMessage: "去学院生成一个课程，然后分享到这里来看看吧！",
+    
+    explanationTitle: "解释",
+    readingTitle: "推荐阅读",
+    sourceTitle: "来源",
+    sourceText: "本课程是使用上传的文档创建的：",
+    comicTitle: "漫画插图",
+    flashcardsTitle: "抽认卡",
+    mindMapTitle: "思维导图",
+    
+    actionsTitle: "定制与分享",
+    actionsText: "您可以编辑上面的文本，并将您的自定义课程另存为Word文档。",
+    enableEditingButton: "启用编辑",
+    lockEditsButton: "锁定编辑",
+    exportWordButton: "导出为Word",
+    sharePlaygroundButton: "分享到操场",
+
+    rateLessonTitle: "评价本课程",
+    discussionTitle: "讨论区",
+    commentPlaceholder: "分享您的想法或提出问题...",
+    postCommentButton: "发表评论",
+    noComments: "暂无评论。成为第一个分享的人！",
+    replyButton: "回复",
+    replyingTo: "回复",
+    cancelButton: "取消",
+    postReplyButton: "发表回复",
+    commentPanda: "匿名的熊猫",
+    commentOwl: "智慧的猫头鹰",
+  },
+};

@@ -5,6 +5,7 @@ import { generateAcademyLesson, ComicPanelData, QuoteData, FlashcardData, MindMa
 import StoryDisplay from './StoryDisplay';
 import Loader from './Loader';
 import ErrorDisplay from './ErrorDisplay';
+import { useLocalization } from '../hooks/useLocalization';
 
 const ConceptExplainer: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
@@ -18,6 +19,7 @@ const ConceptExplainer: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const { language } = useLocalization();
 
   // FIX: Create a function to reset all lesson state.
   const resetLesson = () => {
@@ -41,7 +43,8 @@ const ConceptExplainer: React.FC = () => {
 
     try {
       // FIX: The function generateConceptComic was renamed to generateAcademyLesson.
-      const result = await generateAcademyLesson(topic);
+      // FIX: Pass the 'language' argument to satisfy the function's signature.
+      const result = await generateAcademyLesson(topic, language);
       // FIX: Set all parts of the lesson from the API response.
       setQuote(result.quote);
       setExplanation(result.explanation);
@@ -55,7 +58,7 @@ const ConceptExplainer: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [topic]);
+  }, [topic, language]);
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -93,6 +96,8 @@ const ConceptExplainer: React.FC = () => {
         {/* FIX: Use `hasContent` and pass all required props to StoryDisplay to fix the type error. */}
         {hasContent && !isLoading && (
           <StoryDisplay
+            // FIX: Pass the `topic` prop to satisfy the LessonDisplayProps type.
+            topic={topic}
             quote={quote}
             explanation={explanation}
             recommendedReading={recommendedReading}

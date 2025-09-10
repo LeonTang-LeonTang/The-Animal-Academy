@@ -1,18 +1,35 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { generateAcademyLesson, ConceptExplanation } from '../services/geminiService';
 import LessonDisplay from './StoryDisplay';
 import Loader from './Loader';
 import ErrorDisplay from './ErrorDisplay';
+import { useLocalization, Language } from '../hooks/useLocalization';
 
-const AcademyExplainer: React.FC = () => {
-  const [topic, setTopic] = useState<string>('');
+declare const mammoth: any;
+declare const JSZip: any;
+
+interface AcademyExplainerProps {
+  initialLesson: ConceptExplanation | null;
+  onShare: (lesson: ConceptExplanation) => void;
+  language: Language;
+}
+
+const AcademyExplainer: React.FC<AcademyExplainerProps> = ({ initialLesson, onShare, language }) => {
+  const [topic, setTopic] = useState<string>(initialLesson?.mindMap?.title || '');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // State for the lesson and uploaded file
-  const [lesson, setLesson] = useState<ConceptExplanation | null>(null);
+  const [lesson, setLesson] = useState<ConceptExplanation | null>(initialLesson);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [documentText, setDocumentText] = useState<string>('');
+
+  const { t } = useLocalization();
+  
+  useEffect(() => {
+    setLesson(initialLesson);
+    setTopic(initialLesson?.mindMap?.title || '');
+  }, [initialLesson]);
+
 
   const resetLesson = () => {
     setLesson(null);
@@ -21,16 +38,60 @@ const AcademyExplainer: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setUploadedFile(file);
+      const reader = new FileReader();
+
       if (file.type === 'text/plain') {
-        setUploadedFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setDocumentText(e.target?.result as string);
-        };
+        reader.onload = (e) => setDocumentText(e.target?.result as string);
         reader.readAsText(file);
         setError(null);
+      } else if (file.name.endsWith('.docx')) {
+        if (typeof mammoth === 'undefined') {
+          setError("Word document library (mammoth.js) is not loaded.");
+          return;
+        }
+        reader.onload = (e) => {
+          mammoth.extractRawText({ arrayBuffer: e.target?.result })
+            .then((result: any) => {
+              setDocumentText(result.value);
+              setError(null);
+            })
+            .catch((err: Error) => {
+              console.error(err);
+              setError(`Error reading .docx file: ${err.message}`);
+            });
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (file.name.endsWith('.pptx')) {
+        if (typeof JSZip === 'undefined') {
+          setError("PowerPoint document library (jszip.js) is not loaded.");
+          return;
+        }
+        reader.onload = (e) => {
+          JSZip.loadAsync(e.target.result)
+            .then(async (zip: any) => {
+              const slidePromises: Promise<string>[] = [];
+              zip.folder("ppt/slides").forEach((relativePath: string, file: any) => {
+                if (relativePath.startsWith("slide") && relativePath.endsWith(".xml")) {
+                  slidePromises.push(file.async("string"));
+                }
+              });
+              const slideXmls = await Promise.all(slidePromises);
+              const textContent = slideXmls.map(xml => {
+                const textNodes = xml.match(/<a:t>.*?<\/a:t>/g) || [];
+                return textNodes.map((node: string) => node.replace(/<a:t>/, '').replace(/<\/a:t>/, '')).join(' ');
+              }).join('\\n\\n');
+              setDocumentText(textContent);
+              setError(null);
+            })
+            .catch((err: Error) => {
+              console.error(err);
+              setError(`Error reading .pptx file: ${err.message}`);
+            });
+        };
+        reader.readAsArrayBuffer(file);
       } else {
-        setError("Please upload a plain text (.txt) file.");
+        setError("Unsupported file. Please upload .txt, .docx, or .pptx.");
         setUploadedFile(null);
         setDocumentText('');
       }
@@ -46,7 +107,7 @@ const AcademyExplainer: React.FC = () => {
 
   const handleGeneration = useCallback(async () => {
     if (!topic.trim()) {
-      setError("Please enter a concept for our animals to explain.");
+      setError(t('errorEnterConcept'));
       return;
     }
     setIsLoading(true);
@@ -55,15 +116,15 @@ const AcademyExplainer: React.FC = () => {
 
     try {
       const document = uploadedFile ? { name: uploadedFile.name, text: documentText } : undefined;
-      const result = await generateAcademyLesson(topic, document);
+      const result = await generateAcademyLesson(topic, language, document);
       setLesson(result);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const errorMessage = err instanceof Error ? err.message : t('errorUnexpected');
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [topic, uploadedFile, documentText]);
+  }, [topic, uploadedFile, documentText, language, t]);
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -81,7 +142,7 @@ const AcademyExplainer: React.FC = () => {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask our teachers... (e.g., 'Photosynthesis')"
+          placeholder={t('explainerPlaceholder')}
           className="flex-grow w-full px-5 py-3 text-lg bg-amber-50 border-2 border-amber-300 rounded-full focus:ring-4 focus:ring-amber-300 focus:border-amber-500 focus:outline-none transition duration-300 placeholder-slate-500"
           disabled={isLoading}
         />
@@ -90,20 +151,20 @@ const AcademyExplainer: React.FC = () => {
           disabled={isLoading || !topic.trim()}
           className="px-8 py-3 bg-amber-600 text-white text-lg font-bold rounded-full shadow-md hover:bg-amber-700 disabled:bg-slate-400 disabled:cursor-not-allowed transform hover:scale-105 transition duration-300"
         >
-          {isLoading ? 'Thinking...' : 'Explain'}
+          {isLoading ? t('explainButtonLoading') : t('explainButton')}
         </button>
       </div>
 
        <div className="mt-4 text-center">
-          <input id="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt" disabled={isLoading} />
+          <input id="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.docx,.pptx" disabled={isLoading} />
           {uploadedFile ? (
               <div className="inline-flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
-                  <span className="text-sm text-slate-700">Using: {uploadedFile.name}</span>
+                  <span className="text-sm text-slate-700">{t('usingFileLabel')} {uploadedFile.name}</span>
                   <button onClick={clearFile} disabled={isLoading} className="text-amber-600 hover:text-amber-800 font-bold text-lg leading-none align-middle" aria-label="Remove file">&times;</button>
               </div>
           ) : (
-              <label htmlFor="file-upload" className="text-sm text-slate-600 cursor-pointer inline-flex items-center bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-full border border-amber-200 transition-colors">
-                  Optional: Upload a document (.txt) for a focused explanation
+              <label htmlFor="file-upload" className={`text-sm text-slate-600 inline-flex items-center bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-full border border-amber-200 transition-colors ${isLoading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  {t('uploadLabel')}
               </label>
           )}
       </div>
@@ -112,12 +173,12 @@ const AcademyExplainer: React.FC = () => {
         {isLoading && <Loader />}
         {error && !isLoading && <ErrorDisplay message={error} />}
         {hasContent && !isLoading && (
-          <LessonDisplay {...lesson!} />
+          <LessonDisplay {...lesson!} topic={topic} onShare={() => onShare(lesson!)} />
         )}
         {!isLoading && !error && !hasContent && (
           <div className="text-center text-slate-500">
-            <p className="text-xl">Welcome to the Animal Academy! 🐾</p>
-            <p className="mt-2">What would you like to learn about today? Our expert animal faculty is ready to help.</p>
+            <p className="text-xl">{t('welcomeTitle')} 🐾</p>
+            <p className="mt-2">{t('welcomeMessage')}</p>
           </div>
         )}
       </div>

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { PencilIcon } from './icons/PencilIcon';
-
-const messages = [
-  "The animals are gathering their notes...",
-  "Professor Owl is drafting the explanation...",
-  "The capybaras are sketching the comics...",
-  "The diligent bees are organizing the flashcards...",
-  "Almost there, just putting it all together!",
-];
+import { useLocalization } from '../hooks/useLocalization';
 
 const Loader: React.FC = () => {
+  const { t } = useLocalization();
+  const messages = [
+    t('loaderMessage1'),
+    t('loaderMessage2'),
+    t('loaderMessage3'),
+    t('loaderMessage4'),
+    t('loaderMessage5'),
+  ];
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ const Loader: React.FC = () => {
     }, 3000); // Change message every 3 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [messages]);
 
   return (
     <div className="flex flex-col items-center justify-center text-amber-700">
